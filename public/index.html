@@ -5,13 +5,64 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Handler</title>
+    <script src="https://code.jquery.com/jquery-3.6.2.min.js" integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>Book Handler - Homepage</h1>
-    <form method="post">
-        <input type="text" name="tes">
-        <input type="submit" value="Go to account">
-    </form>
+    <header>
+        <nav>
+            <ul>
+                <li>SignIn</li>
+                <li>SignUp</li>
+                <li><a href="/signout">SignOut</a></li>
+                <form action="/signin" method="post">
+                    <input type="text" name="username" placeholder="username...">
+                    <input type="password" name="password" placeholder="password...">
+                    <input type="submit" value="SignIn">
+                </form>
+                <form action="/signup" method="post">
+                    <input type="text" name="username" placeholder="username...">
+                    <input type="password" name="password" placeholder="password...">
+                    <input type="password" name="repassword" placeholder="repeat password...">
+                    <input type="submit" value="SignUp">
+                </form>
+                <script>
+                    $.ajax({
+                        url: "/ajax/signerrors",
+                        type: "GET",
+                        success: (res, status, http) => {
+                            if (!res) return;
+
+                            console.log(res);
+                        }
+                    });
+                </script>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article>
+            <h1>Book Handler - Homepage</h1>
+            <div id="welcome"></div>
+            <script>
+                $.ajax({
+                    url: "/ajax/signedin",
+                    type: "GET",
+                    success: (res, status, http) => {
+                        if (!res) return;
+
+                        const elem = document.createElement('p');
+                        elem.innerText = `Welcome ${res}.`;
+
+                        document.getElementById('welcome').appendChild(elem);
+                    }
+                });
+            </script>
+            <form action="/search" method="post">
+                <input type="text" name="tes">
+                <input type="submit" value="Go to account">
+            </form>
+        </article>
+    </main>
 </body>
 </html>

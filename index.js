@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -22,6 +23,11 @@ con.connect(err => {
 });
 
 // Configure Express
+app.use(session({
+    resave: false,
+    saveUninitialized: false,
+    secret: 'changeThisInProduction'
+}));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static('css'));
@@ -49,17 +55,56 @@ app.get('/user/:id', (req, res) => {
 // Homepage
 app.get('/', (req, res) => res.status(202).sendFile(path.join(__dirname, `${f}index.html`)));
 
-app.post('/', (req, response) => {
-    console.log(req.body.tes);
+// Signin
+app.post('/signin', (req, response) => {
+    console.log(req.body.username);
+    console.log(req.body.pass);
 
-    con.query('SELECT * FROM users WHERE username=?', req.body.tes, (err, res) => {
+    con.query('SELECT * FROM users WHERE username=? AND password=?', [req.body.username, req.body.password], (err, res) => {
         if (err) throw err;
-        console.log(res);
-        if (res.length > 0) response.redirect('/user/' + req.body.tes);
+        req.session.username = req.body.username;
+        response.redirect('/');
     });
 });
 
+// Signup
+app.post('/signup', (req, response) => {
+    con.query('SELECT * FROM users WHERE username=?', req.body.username, (err, res) => {
+        if (err) throw err;
+
+        req.session.errors = {};
+        let error = false;
+        
+        if (res.length) {
+            error = req.session.errors.alreadyExists = true;
+        }
+
+        if (req.password !== req.repassword) {
+            error = req.session.errors.passDoNotMatch = true;
+        }
+
+        console.log(req.password)
+        
+        if (error) return response.redirect('/');
+
+        response.redirect('/user/Loamo/');
+    });
+});
+
+// Signout
+app.get('/signout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/');
+});
+
 // Ajax
+app.get('/ajax/signerrors', (req, res) => {
+    res.send(req.session);
+});
+
+app.get('/ajax/signedin', (req, res) => {
+    res.send(req.session.username);
+});
 app.get('/ajax/user', (req, response) => {
     console.log(req.query.id);
 
