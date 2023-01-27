@@ -13,13 +13,29 @@
     <h2 id="username"></h2>
     <script>
         $.ajax({
-            url: "/ajax/user?id=Loamo",
+            url: "/ajax/user?id=" + document.location.href.split('/').filter(s => s.length).at(-1),
             type: "GET",
             success: (res, status, http) => {
                 if (!res) return;
 
+                console.log(res);
+
                 document.getElementById('user').innerText = res.firstname + ' ' + res.lastname;
                 document.getElementById('username').innerText = res.username;
+            }
+        });
+
+        $.ajax({
+            url: "/ajax/signedin",
+            type: "GET",
+            success: (res, status, http) => {
+                if (!res) return;
+                if (res != document.location.href.split('/').filter(s => s.length).at(-1)) return;
+
+                const elem = document.createElement('a');
+                elem.href = './edit';
+                elem.innerText = `Edit`;
+                document.body.appendChild(elem);
             }
         });
     </script>

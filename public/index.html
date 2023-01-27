@@ -22,8 +22,10 @@
                 </form>
                 <form action="/signup" method="post">
                     <input type="text" name="username" placeholder="username...">
+                    <div id="exists"></div>
                     <input type="password" name="password" placeholder="password...">
                     <input type="password" name="repassword" placeholder="repeat password...">
+                    <div id="nomatch"></div>
                     <input type="submit" value="SignUp">
                 </form>
                 <script>
@@ -31,9 +33,22 @@
                         url: "/ajax/signerrors",
                         type: "GET",
                         success: (res, status, http) => {
-                            if (!res) return;
+                            if (!res.errors) return;
 
-                            console.log(res);
+                            const errors = Object.keys(res.errors);
+                            if (errors.length) {
+                                for (let i = 0; i < errors.length; i++) {
+                                    const err = errors[i];
+                                    switch (err) {
+                                        case 'alreadyExists':
+                                            document.getElementById('exists').innerText = 'The username already exists.';
+                                            break;
+                                        case 'passDoNotMatch':
+                                            document.getElementById('nomatch').innerText = 'The passwords do not match.';
+                                            break;
+                                    }
+                                }
+                            }
                         }
                     });
                 </script>

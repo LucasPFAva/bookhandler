@@ -1,7 +1,6 @@
 const express = require('express');
 const session = require('express-session');
 const mysql = require('mysql');
-const bodyParser = require('body-parser');
 const path = require('path');
 const app = express();
 
@@ -28,17 +27,18 @@ app.use(session({
     saveUninitialized: false,
     secret: 'changeThisInProduction'
 }));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('css'));
 
 // Find user
 app.all('/user/:id/:op?', (req, res, next) => {
     con.query('SELECT * FROM users WHERE username=?', req.params.id, (err, res) => {
         if (err) throw err;
-
+        
         if (res.length > 0) req.user = res[0];
         else req.user = null;
+
+        console.log(req.user);
 
         if (req.user) next();
         else next(new Error('Could not find user ' + req.params.id));
@@ -52,18 +52,25 @@ app.get('/user/:id', (req, res) => {
     // res.status(202).send(req.user.username + ': ' + req.user.firstname + ' ' + req.user.lastname);
 });
 
+// Edit user page
+app.get('/user/:id/edit', (req, res) => {
+    if (req.session.username != req.params.id) return res.redirect('/user/' + req.params.id);
+    res.status(202).sendFile(path.join(__dirname, `${f}edit.html`));
+});
+
 // Homepage
 app.get('/', (req, res) => res.status(202).sendFile(path.join(__dirname, `${f}index.html`)));
 
 // Signin
-app.post('/signin', (req, response) => {
+app.post('/signin', (req, res) => {
     console.log(req.body.username);
     console.log(req.body.pass);
 
-    con.query('SELECT * FROM users WHERE username=? AND password=?', [req.body.username, req.body.password], (err, res) => {
+    con.query('SELECT * FROM users WHERE username=? AND password=?', [req.body.username, req.body.password], (err, result) => {
         if (err) throw err;
+        if (!result.length) return res.redirect('/');
         req.session.username = req.body.username;
-        response.redirect('/');
+        res.redirect(`/user/${req.body.username}/`);
     });
 });
 
@@ -75,19 +82,34 @@ app.post('/signup', (req, response) => {
         req.session.errors = {};
         let error = false;
         
-        if (res.length) {
-            error = req.session.errors.alreadyExists = true;
-        }
+        if (res.length) error = req.session.errors.alreadyExists = true;
 
-        if (req.password !== req.repassword) {
-            error = req.session.errors.passDoNotMatch = true;
-        }
-
-        console.log(req.password)
+        if (req.body.password !== req.body.repassword) error = req.session.errors.passDoNotMatch = true;
         
         if (error) return response.redirect('/');
 
-        response.redirect('/user/Loamo/');
+        con.query('INSERT INTO users (username, password) VALUES (?,?)', [req.body.username, req.body.password], (err, result) => {
+            if (err) throw err;
+            // req.session.response = `User: ${req.body.username} was created successfully.`;
+            req.session.username = req.body.username;
+            response.redirect(`/user/${req.body.username}/`);
+        });
+    });
+});
+
+// Update Firstname
+app.post('/updatefirstname', (req, res) => {
+    con.query('UPDATE users SET firstname=? WHERE username=?', [req.body.firstname, req.session.username], (err, result) => {
+        if (err) throw err;
+        res.redirect('/');
+    });
+});
+
+// Update Lastname
+app.post('/updatelastname', (req, res) => {
+    con.query('UPDATE users SET lastname=? WHERE username=?', [req.body.lastname, req.session.username], (err, result) => {
+        if (err) throw err;
+        res.redirect('/');
     });
 });
 
@@ -106,8 +128,6 @@ app.get('/ajax/signedin', (req, res) => {
     res.send(req.session.username);
 });
 app.get('/ajax/user', (req, response) => {
-    console.log(req.query.id);
-
     con.query('SELECT * FROM users WHERE username=?', req.query.id, (err, res) => {
         if (err) throw err;
 
