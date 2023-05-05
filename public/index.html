@@ -11,7 +11,7 @@
 <body>
     <header>
         <nav>
-            <ul>
+            <ul id="menu">
                 <li>SignIn</li>
                 <li>SignUp</li>
                 <li><a href="/signout">SignOut</a></li>
@@ -70,6 +70,13 @@
                         elem.innerText = `Welcome ${res}.`;
 
                         document.getElementById('welcome').appendChild(elem);
+
+                        const anchor = document.createElement('a');
+                        anchor.innerText = 'Account';
+                        // git add . && git commit -m "Databaser med NodeJS" && git push origin master
+                        anchor.href = `/user/${res}/`;
+
+                        document.getElementById('menu').appendChild(anchor);
                     }
                 });
             </script>
