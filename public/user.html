@@ -11,6 +11,25 @@
 <body>
     <h1 id="user">User Page</h1>
     <h2 id="username"></h2>
+    <table>
+        <h2>Borrowing:</h2>
+        <thead>
+            <tr>
+                <th>Book</th>
+                <th>Start Week</th>
+                <th>Due Week</th>
+                <th>Copies Borrowed</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><a href="/book/1/">Albert by French boi 2022</a></td>
+                <td>Vecka 20, 2023</td>
+                <td>Vecka 21, 2023</td>
+                <td>20</td>
+            </tr>
+        </tbody>
+    </table>
     <script>
         $.ajax({
             url: "/ajax/user?id=" + document.location.href.split('/').filter(s => s.length).at(-1),

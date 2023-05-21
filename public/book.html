@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book</title>
+    <style>
+        caption {
+            caption-side: bottom;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        table {
+            border-collapse: collapse;
+        }
+    </style>
+</head>
+<body>
+    <h1>Book</h1>
+    <label for="title">Title:</label>
+    <span>Title</span>
+    <br>
+    <label for="author">Author:</label>
+    <span>Author Name</span>
+    <br>
+    <label for="copies">Copies:</label>
+    <span>0/n Available</span>
+    <table>
+        <h2>Borrowing:</h2>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Start Week</th>
+                <th>Due Week</th>
+                <th>Copies Borrowed</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><a href="/user/Loamo/">Albert</a></td>
+                <td>Vecka 20, 2023</td>
+                <td>Vecka 21, 2023</td>
+                <td>20</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

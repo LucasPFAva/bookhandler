@@ -58,6 +58,23 @@ app.get('/user/:id/edit', (req, res) => {
     res.status(202).sendFile(path.join(__dirname, `${f}edit.html`));
 });
 
+app.get('/library/', (req, res) => {
+    res.status(202).sendFile(path.join(__dirname, `${f}library.html`));
+});
+
+app.get('/book/:id', (req, res) => {
+    res.status(202).sendFile(path.join(__dirname, `${f}book.html`));
+});
+
+app.get('/entry/', (req, res) => {
+    res.status(202).sendFile(path.join(__dirname, `${f}entry.html`));
+});
+
+app.get('/booking/', (req, res) => {
+    // if (!req.session.username) return;  // Error no session.
+    res.status(202).sendFile(path.join(__dirname, `${f}booking.html`));
+});
+
 // Homepage
 app.get('/', (req, res) => res.status(202).sendFile(path.join(__dirname, `${f}index.html`)));
 
@@ -117,6 +134,49 @@ app.post('/updatelastname', (req, res) => {
     });
 });
 
+// Create new author
+app.post('/author', (req, res) => {
+    if (!req.session.username) return;  // Error no session.
+
+    con.query('INSERT INTO authors (name) VALUES (?)', req.body.name, (err, result) => {
+        if (err) throw err;
+        return; // Success
+    });
+});
+
+// Delete author
+app.post('/deleteauthor', (req, res) => {
+    if (!req.session.username) return;  // Error no session.
+
+    console.log(req.body);
+    con.query('DELETE FROM authors WHERE name=?', req.body.name, (err, result) => {
+        if (err) throw err;
+        return; // Success
+    });
+});
+
+// Create new entry
+app.post('/entry', (req, res) => {
+    if (!req.session.username) return;  // Error no session.
+
+    con.query('SELECT * FROM authors WHERE name=?', req.body.author, (err, result) => {
+        if (err) throw err;
+        if (!result) return;    // No author found.
+
+        con.query('INSERT INTO books (authorid, title, copies) VALUES (?,?,?)', [result.id, req.body.title, req.body.copies], (err, result) => {
+            if (err) throw err;
+            return; // Success
+        });
+    })
+});
+
+app.get('/authors', (req, res) => {
+    con.query('SELECT * FROM authors', (err, result) => {
+        if (err) throw err;
+        res.json(result);
+    });
+});
+
 // Signout
 app.get('/signout', (req, res) => {
     req.session.destroy();
@@ -143,7 +203,7 @@ app.get('/ajax/user', (req, response) => {
 });
 
 // Nothing to route.
-app.get('*', (req, res) => res.status(404).send('Page not found'));
+app.get('*', (req, res) => res.status(404).send(`Page not found. Return <a href="/">Home</a>?`));
 
 // Start server
 app.listen(port, host, () => {

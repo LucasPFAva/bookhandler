@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library</title>
+    <script src="https://code.jquery.com/jquery-3.6.2.min.js" integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
+    <style>
+        #authorfilter span:not(:last-child)::after {
+            content: ", "
+        }
+        caption {
+            caption-side: bottom;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        table {
+            border-collapse: collapse;
+        }
+    </style>
+</head>
+<body>
+    <h1>Library</h1>
+    <a href="./">Home</a>
+    <br>
+    <input type="text" id="search" placeholder="Author...">
+    <ul id="authors">
+        <!-- Will be appended dynamically -->
+    </ul>
+    <form method="post">
+        <label for="authors">Authors:</label>
+        <div id="authorfilter">
+            <!-- Will be appended dynamically and be removeable by click -->
+        </div>
+        <select name="accessibility" id="accessibility">
+            <option value="available">Available</option>
+            <option value="borrowed">Borrowed</option>
+            <option value="all">All</option>
+        </select>
+        <input type="search" name="query" id="query" placeholder="Book title...">
+        <input type="submit" value="Search">
+    </form>
+    <table>
+        <caption>Book not found? <a href="./entry">Add</a> a new entry.</caption>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Available</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Mushoku Tensei</td>
+                <td>Tired Goose</td>
+                <td>No</td>
+            </tr>
+            <tr>
+                <td>Nise</td>
+                <td>Tired Goose</td>
+                <td>Yes</td>
+            </tr>
+            <tr>
+                <td>Bröd Moss</td>
+                <td>Rå Röda Lingon</td>
+                <td>Yes</td>
+            </tr>
+        </tbody>
+    </table>
+    <script>
+        const selected = new Set();
+        const authors = new Set(); // MySQL Database table
+
+        const search = document.getElementById('search');
+        const authorList = document.getElementById('authors');
+        const authorFilter = document.getElementById('authorfilter');
+        search.addEventListener('keyup', e => {
+            $.ajax({
+                url: "/authors",
+                type: "GET",
+                success: (res, status, http) => {
+                    if (!res) return;
+                    authors.clear();
+                    for (let i = 0; i < res.length; i++) authors.add(res[i].name);
+                }
+            });
+            authorList.innerHTML = "";
+            const result = [...authors].filter(i => i.toLowerCase().includes(e.target.value.toLowerCase()))
+            for (let i = 0; i < result.length; i++) {
+                const elem = document.createElement('li');
+                const searchEqualToAuthor = result[i].toLowerCase() === e.target.value.toLowerCase();
+                if (searchEqualToAuthor) {
+                    // If search is equal to an author, an option to delete said author from database because present.
+                    elem.addEventListener('click', er => {
+                        $.post('deleteauthor', { name: e.target.value }, (res) => {
+                            console.log('Removed author from database.');
+                        });
+                        selected.delete(result[i]);
+                        const children = authorFilter.children;
+                        for (let j = 0; j < children.length; j++) {
+                            if (children[j].innerText === result[i]) {
+                                children[j].remove();
+                                break;
+                            }
+                        }
+                    });
+                } else {
+                    elem.addEventListener('click', e => {
+                        const authorElem = document.createElement('span');
+                        authorElem.innerText = result[i];
+                        authorElem.style.cursor = 'pointer';
+                        authorElem.addEventListener('click', e => {
+                            selected.delete(result[i]);
+                            authorElem.remove();
+                        });
+                        if (!selected.has(result[i])) authorFilter.appendChild(authorElem);
+                        selected.add(result[i]);
+                    });
+                }
+                elem.style.cursor = 'pointer';
+                elem.innerText = searchEqualToAuthor ? `Remove: "${result[i]}" from database` : result[i];
+                authorList.appendChild(elem);
+            }
+
+            if (result.length <= 0 && e.target.value.length > 0) {
+                const addEntry = document.createElement('li');
+                addEntry.addEventListener('click', ev => {
+                    // authors.
+                    if (!e.target.value.length) return; // Empty string.
+                    console.log('yes');
+                    $.post('author', { name: e.target.value }, (res) => {
+                        console.log('Added to database');
+                    });
+                });
+                addEntry.style.cursor = 'pointer';
+                addEntry.innerText = `Add: "${e.target.value}" as a new author`;
+
+                authorList.appendChild(addEntry);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking</title>
+</head>
+<body>
+    <h1>Booking</h1>
+    <form method="post" id="booking">
+        <input type="submit" value="Submit">
+        <br>
+        <label for="copies">Number of copies:</label>
+        <input type="number" min="1" name="copies" id="copies" value="1">
+        <br>
+        <label for="week">Select a week:</label>
+        <input type="date" name="date" id="date1">
+        <input type="week" name="week" id="week1">
+        <br>
+        <label for="week">Select a week:</label>
+        <input type="date" name="date" id="date2">
+        <input type="week" name="week" id="week2">
+    </form>
+    <textarea name="annotation" cols="30" rows="10" form="booking" placeholder="Notes for the booking..."></textarea>
+    <script>
+        const nativePicker1 = document.getElementById('date1');
+        const weekPicker1 = document.getElementById('week1');
+        const nativePicker2 = document.getElementById('date2');
+        const weekPicker2 = document.getElementById('week2');
+        
+        // Test whether a new date input falls back to a text input or not
+        const test = document.createElement('input');
+
+        try {
+            test.type = 'week';
+        } catch (e) {
+            console.log(e.description);
+        }
+
+        // Change interface depending on the success of the aforementioned test.
+        if (test.type !== 'text') {
+            // Hide the native picker
+            nativePicker1.style.display = 'none';
+            nativePicker2.style.display = 'none';
+        } else {
+            weekPicker1.readOnly = true;
+            weekPicker2.readOnly = true;
+        }
+        
+        nativePicker1.onchange = () => {
+            const date = nativePicker1.valueAsDate;
+            weekPicker1.value = `${date.getFullYear()}-W${getWeek(date)}`;
+        };
+
+        nativePicker2.onchange = () => {
+            const date = nativePicker2.valueAsDate;
+            weekPicker2.value = `${date.getFullYear()}-W${getWeek(date)}`;
+        };
+
+        /***
+         * ISO 8601 week number
+        */
+        function getWeek(date) {
+            const newYear = new Date(date.getFullYear(), 0, 1);
+            let day = newYear.getDay() - 1;
+            day = (day >= 0 ? day : day + 7);
+            const daynum = Math.floor((date.getTime() - newYear.getTime() - (date.getTimezoneOffset() - newYear.getTimezoneOffset()) * 60000) / 86400000) + 1;
+            if (day < 4) {
+                const weeknum = Math.floor((daynum + day - 1) / 7) + 1;
+                if (weeknum > 52) {
+                    const nYear = new Date(date.getFullYear() + 1, 0, 1);
+                    let nday = nYear.getDay() - 1;
+                    nday = nday >= 0 ? nday : nday + 7;
+
+                    return nday < 4 ? 1 : 53;
+                }
+
+                return weeknum;
+            }
+            else return Math.floor((daynum + day - 1) / 7);
+        }
+    </script>
+</body>
+</html>

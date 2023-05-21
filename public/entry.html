@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.2.min.js" integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
+    <title>Entry</title>
+</head>
+<body>
+    <h1>New Entry</h1>
+    <input type="text" id="search" placeholder="Author search...">
+    <ul id="authors">
+        <!-- Will be appended dynamically -->
+    </ul>
+    <form method="post">
+        <label for="author">Author:</label>
+        <input type="text" readonly name="author" id="author">
+        <br>
+        <label for="title">Title:</label>
+        <input type="text" name="title">
+        <br>
+        <label for="copies">Copies in stock:</label>
+        <input type="number" min="1" name="copies" id="copies" value="1">
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+    <a href="./library">Back</a>
+    <script>
+        const authors = new Set(); // MySQL Database table
+
+        const author = document.getElementById('author');
+
+        const search = document.getElementById('search');
+        const authorList = document.getElementById('authors');
+        search.addEventListener('keyup', e => {
+            $.ajax({
+                url: "/authors",
+                type: "GET",
+                success: (res, status, http) => {
+                    if (!res) return;
+                    authors.clear();
+                    for (let i = 0; i < res.length; i++) authors.add(res[i].name);
+                }
+            });
+            authorList.innerHTML = "";
+            const result = [...authors].filter(i => i.toLowerCase().includes(e.target.value.toLowerCase()))
+            for (let i = 0; i < result.length; i++) {
+                const elem = document.createElement('li');
+                const searchEqualToAuthor = result[i].toLowerCase() === e.target.value.toLowerCase();
+                if (searchEqualToAuthor) {
+                    // If search is equal to an author, an option to delete said author from database because present.
+                    elem.addEventListener('click', er => {
+                        $.post('deleteauthor', { name: e.target.value }, (res) => {
+                            console.log('Removed author from database.');
+                        });
+                        author.value = "";
+                    });
+                } else {
+                    elem.addEventListener('click', e => {
+                        author.value = result[i];
+                    });
+                }
+                elem.style.cursor = 'pointer';
+                elem.innerText = searchEqualToAuthor ? `Remove: "${result[i]}" from database` : result[i];
+                authorList.appendChild(elem);
+            }
+
+            if (result.length <= 0 && e.target.value.length > 0) {
+                const addEntry = document.createElement('li');
+                addEntry.addEventListener('click', ev => {
+                    // authors.
+                    if (!e.target.value.length) return; // Empty string.
+                    console.log('yes');
+                    $.post('author', { name: e.target.value }, (res) => {
+                        console.log('Added to database');
+                    });
+                });
+                addEntry.style.cursor = 'pointer';
+                addEntry.innerText = `Add: "${e.target.value}" as a new author`;
+
+                authorList.appendChild(addEntry);
+            }
+        });
+    </script>
+</body>
+</html>
