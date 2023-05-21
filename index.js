@@ -92,24 +92,28 @@ app.post('/signup', (req, response) => {
             if (err) throw err;
             // req.session.response = `User: ${req.body.username} was created successfully.`;
             req.session.username = req.body.username;
-            response.redirect(`/user/${req.body.username}/`);
+            response.redirect(`/user/${req.body.username}`);
         });
     });
 });
 
 // Update Firstname
 app.post('/updatefirstname', (req, res) => {
+    if (!req.session.username) return;  // Error no session.
+
     con.query('UPDATE users SET firstname=? WHERE username=?', [req.body.firstname, req.session.username], (err, result) => {
         if (err) throw err;
-        res.redirect('/');
+        res.redirect(`/user/${req.session.username}`);
     });
 });
 
 // Update Lastname
 app.post('/updatelastname', (req, res) => {
+    if (!req.session.username) return;  // Error no session.
+
     con.query('UPDATE users SET lastname=? WHERE username=?', [req.body.lastname, req.session.username], (err, result) => {
         if (err) throw err;
-        res.redirect('/');
+        res.redirect(`/user/${req.session.username}`);
     });
 });
 
