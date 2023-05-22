@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.2.min.js" integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
     <title>Book</title>
     <style>
         caption {
@@ -19,14 +20,95 @@
 </head>
 <body>
     <h1>Book</h1>
+    <a href="/">Home</a>
+    <br>
     <label for="title">Title:</label>
-    <span>Title</span>
+    <span id="title">Title</span>
     <br>
     <label for="author">Author:</label>
-    <span>Author Name</span>
+    <span id="author">Author Name</span>
     <br>
-    <label for="copies">Copies:</label>
-    <span>0/n Available</span>
+    <label for="copies">Status:</label>
+    <span id="copies">0/n Available</span>
+
+    <div id="borrow" style="display:none">
+        <h2>Booking</h2>
+        <form method="post" id="booking">
+            <input type="submit" value="Submit">
+            <br>
+            <label for="copies">Number of copies:</label>
+            <input type="number" min="1" name="copies" id="availability" value="1">
+            <br>
+            <label for="start-week">Select a start-week:</label>
+            <input type="date" id="date1">
+            <input type="week" name="startweek" id="week1" required>
+            <br>
+            <label for="due-week">Select a due-week:</label>
+            <input type="date" id="date2">
+            <input type="week" name="dueweek" id="week2" required>
+        </form>
+        <textarea name="annotation" cols="30" rows="10" form="booking" placeholder="Notes for the booking..."></textarea>
+        <script>
+            const nativePicker1 = document.getElementById('date1');
+            const weekPicker1 = document.getElementById('week1');
+            const nativePicker2 = document.getElementById('date2');
+            const weekPicker2 = document.getElementById('week2');
+            
+            // Test whether a new date input falls back to a text input or not
+            const test = document.createElement('input');
+
+            try {
+                test.type = 'week';
+            } catch (e) {
+                console.log(e.description);
+            }
+
+            // Change interface depending on the success of the aforementioned test.
+            if (test.type !== 'text') {
+                // Hide the native picker
+                nativePicker1.style.display = 'none';
+                nativePicker2.style.display = 'none';
+            } else {
+                weekPicker1.readOnly = true;
+                weekPicker2.readOnly = true;
+            }
+            
+            nativePicker1.onchange = () => {
+                const date = nativePicker1.valueAsDate;
+                weekPicker1.value = `${date.getFullYear()}-W${getWeek(date)}`;
+            };
+
+            nativePicker2.onchange = () => {
+                const date = nativePicker2.valueAsDate;
+                weekPicker2.value = `${date.getFullYear()}-W${getWeek(date)}`;
+            };
+
+            /***
+             * ISO 8601 week number
+            */
+            function getWeek(date) {
+                const newYear = new Date(date.getFullYear(), 0, 1);
+                let day = newYear.getDay() - 1;
+                day = (day >= 0 ? day : day + 7);
+                const daynum = Math.floor((date.getTime() - newYear.getTime() - (date.getTimezoneOffset() - newYear.getTimezoneOffset()) * 60000) / 86400000) + 1;
+                if (day < 4) {
+                    const weeknum = Math.floor((daynum + day - 1) / 7) + 1;
+                    if (weeknum > 52) {
+                        const nYear = new Date(date.getFullYear() + 1, 0, 1);
+                        let nday = nYear.getDay() - 1;
+                        nday = nday >= 0 ? nday : nday + 7;
+
+                        return nday < 4 ? 1 : 53;
+                    }
+
+                    return weeknum;
+                }
+                else return Math.floor((daynum + day - 1) / 7);
+            }
+        </script>
+    </div>
+
+
     <table>
         <h2>Borrowing:</h2>
         <thead>
@@ -35,16 +117,107 @@
                 <th>Start Week</th>
                 <th>Due Week</th>
                 <th>Copies Borrowed</th>
+                <th>Annotation</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td><a href="/user/Loamo/">Albert</a></td>
-                <td>Vecka 20, 2023</td>
-                <td>Vecka 21, 2023</td>
-                <td>20</td>
-            </tr>
+        <tbody id="table">
+            <!-- Dynamically appened -->
         </tbody>
     </table>
+    <script>
+        // Get Book Info
+        let borrowed = 0;   // The number of copies that are currently borrowed.
+        const bookid = document.location.href.split('/').filter(s => s.length).at(-1);
+        $.ajax({
+            url: `/ajax/book?id=${bookid}`,
+            type: "GET",
+            success: (response, status, http) => {
+                if (!response) return;
+
+                console.log(response);
+
+                // Get Author Info
+                $.ajax({
+                    url: `/ajax/author?id=${response.authorid}`,
+                    type: "GET",
+                    success: (res, status, http) => {
+                        if (!res) return;
+                        console.log(res);
+
+                        // Get Borrow Info (in order to calculate availability)
+                        $.ajax({
+                            url: `/ajax/bookings?id=${bookid}`,
+                            type: "GET",
+                            success: (bookings, status, http) => {
+                                console.log(bookings);
+
+                                document.getElementById('title').innerText = response.title;
+                                document.getElementById('author').innerText = res.name;
+
+                                // Prepare the table to be appened with
+                                const table = document.getElementById('table');
+                                
+                                // Calculate & append the table
+                                for (let i = 0; i < bookings.length; i++) {
+                                    const booking = bookings[i];
+                                    
+                                    // Calculate
+                                    borrowed += booking.copies;
+
+                                    // Append To Table
+
+
+                                    // Get user information
+                                    $.ajax({
+                                        url: `/ajax/userid?id=${booking.userid}`,
+                                        type: "GET",
+                                        success: (res1, status, http) => {
+                                            if (!res1) return;
+
+
+                                            const elem = document.createElement('tr');
+                                            const week1 = booking.borrowed;
+                                            const week2 = booking.due;
+                                            elem.innerHTML = `<td><a href="/user/${res1.username}/">${res1.username}</a></td><td>Vecka ${booking.borrowed.split('W')[1]}, ${booking.borrowed.split('-')[0]}</td><td>Vecka ${booking.due.split('W')[1]}, ${booking.due.split('-')[0]}</td><td>${booking.copies}</td><td>${booking.annotation}</td>`;
+                                            table.appendChild(elem);
+                                            console.log(elem);
+                                        }
+                                    });
+                                }
+                                const count = response.copies - borrowed;
+                                document.getElementById('copies').innerText = count > 0 ? `${count}/${response.copies} copies are available.` : `None of the ${response.copies} copies are available.`;
+                                
+                                // Check of borrowable
+                                $.ajax({
+                                    url: "/ajax/signedin",
+                                    type: "GET",
+                                    success: (res, status, http) => {
+                                        if (!res) return;
+                                        if (count <= 0) return;
+
+                                        // Make borrow section visible as the conditions have been meet.
+                                        const borrow = document.getElementById('borrow');
+                                        borrow.style.display = 'block';
+
+                                        const copies = document.getElementById('availability');
+                                        console.log(copies);
+                                        copies.setAttribute('max', count);
+
+                                        // Force the due-week to be a minimum of one week after the start-week.
+                                        const startWeek = document.getElementById('week1');
+                                        const dueWeek = document.getElementById('week2');
+
+                                        startWeek.addEventListener('change', e => {
+                                            dueWeek.setAttribute('min', e.target.value);
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

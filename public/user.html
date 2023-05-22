@@ -19,15 +19,11 @@
                 <th>Start Week</th>
                 <th>Due Week</th>
                 <th>Copies Borrowed</th>
+                <th>Annotation</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td><a href="/book/1/">Albert by French boi 2022</a></td>
-                <td>Vecka 20, 2023</td>
-                <td>Vecka 21, 2023</td>
-                <td>20</td>
-            </tr>
+        <tbody id="table">
+            <!-- Dynamically appended -->
         </tbody>
     </table>
     <script>
@@ -55,6 +51,37 @@
                 elem.href = `/user/${res}/edit`;
                 elem.innerText = `Edit`;
                 document.body.appendChild(elem);
+            }
+        });
+
+        // Get the user's bookings
+        $.ajax({
+            url: `/ajax/userbookings?id=${document.location.href.split('/').filter(s => s.length).at(-1)}`,
+            type: "GET",
+            success: (bookings, status, http) => {
+                console.log(bookings);
+
+                // Prepare the table to be appened with
+                const table = document.getElementById('table');
+                
+                // Append the table
+                for (let i = 0; i < bookings.length; i++) {
+                    const booking = bookings[i];
+
+                    // Get book information
+                    $.ajax({
+                        url: `/ajax/book?id=${booking.bookid}`,
+                        type: "GET",
+                        success: (res, status, http) => {
+                            if (!res) return;
+                            
+                            
+                            const elem = document.createElement('tr');
+                            elem.innerHTML = `<td><a href="/book/${booking.bookid}/">${res.title}</a></td><td>Vecka ${booking.borrowed.split('W')[1]}, ${booking.borrowed.split('-')[0]}</td><td>Vecka ${booking.due.split('W')[1]}, ${booking.due.split('-')[0]}</td><td>${booking.copies}</td><td>${booking.annotation}</td>`;
+                            table.appendChild(elem);
+                        }
+                    });
+                }
             }
         });
     </script>

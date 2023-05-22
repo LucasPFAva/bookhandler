@@ -29,7 +29,7 @@
     <ul id="authors">
         <!-- Will be appended dynamically -->
     </ul>
-    <form method="post">
+    <form id="searchform">
         <label for="authors">Authors:</label>
         <div id="authorfilter">
             <!-- Will be appended dynamically and be removeable by click -->
@@ -51,22 +51,8 @@
                 <th>Available</th>
             </tr>
         </thead>
-        <tbody>
-            <tr>
-                <td>Mushoku Tensei</td>
-                <td>Tired Goose</td>
-                <td>No</td>
-            </tr>
-            <tr>
-                <td>Nise</td>
-                <td>Tired Goose</td>
-                <td>Yes</td>
-            </tr>
-            <tr>
-                <td>Bröd Moss</td>
-                <td>Rå Röda Lingon</td>
-                <td>Yes</td>
-            </tr>
+        <tbody id="table">
+            <!-- Dynamically appended -->
         </tbody>
     </table>
     <script>
@@ -140,6 +126,140 @@
                 authorList.appendChild(addEntry);
             }
         });
+
+
+        // Populate the table with books to be used when searching
+        $.ajax({
+                url: "/ajax/books",
+                type: "GET",
+                success: (books, status, http) => {
+                    if (!books.length) return;
+
+                    for (let i = 0; i < books.length; i++) {
+                        const book = books[i];
+                        let borrowed = 0;   // The number of copies that are currently borrowed.
+                        // Get Borrow Info (in order to calculate availability)
+                        $.ajax({
+                            url: `/ajax/bookings?id=${book.id}`,
+                            type: "GET",
+                            success: (bookings, status, http) => {        
+                                // Prepare the table to be appened with
+                                const table = document.getElementById('table');
+                                
+                                // Calculate & append the table
+                                for (let i = 0; i < bookings.length; i++) {
+                                    const booking = bookings[i];
+                                    
+                                    // Calculate
+                                    borrowed += booking.copies;
+    
+                                    // Append To Table
+    
+                                }
+
+                                // Get author information
+                                $.ajax({
+                                    url: `/ajax/author?id=${book.authorid}`,
+                                    type: "GET",
+                                    success: (author, status, http) => {
+                                        if (!author) return;
+
+                                        const elem = document.createElement('tr');
+                                        const count = book.copies - borrowed;
+                                        elem.innerHTML = `<td><a href="/book/${book.id}/">${book.title}</a></td><td>${author.name}<td>${count > 0 ? `${count}/${book.copies}` : 'No'}</td>`;
+                                        table.appendChild(elem);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Intercept the submit event of the search form
+            function processForm(e) {
+                if (e.preventDefault) e.preventDefault();
+
+                const children = document.querySelectorAll('#table tr');
+
+                const titles = [];
+                const temp1 = document.querySelectorAll('#table tr td:first-child');
+                for (let i = 0; i < temp1.length; i++) {
+                    titles.push({ id: i, value: temp1[i].innerText });
+                }
+                const accessibilities = [];
+                const temp2 = document.querySelectorAll('#table tr td:last-child');
+                for (let i = 0; i < temp1.length; i++) {
+                    accessibilities.push({ id: i, value: temp2[i].innerText });
+                }
+                const authors2 = [];
+                const temp3 = document.querySelectorAll('#table tr td:nth-child(2)');
+                for (let i = 0; i < temp3.length; i++) {
+                    authors2.push({ id: i, value: temp3[i].innerText });
+                }
+                const query = document.getElementById('query');
+
+                // Title search
+                const result = titles.filter(i => i.value.toLowerCase().includes(query.value.toLowerCase()));
+
+                // Selector search
+                const selector = document.getElementById('accessibility');
+                let result1 = accessibilities;
+                if (selector.value === 'available') {
+                    result1 = accessibilities.filter(i => i.value !== 'No');
+                } else if (selector.value === 'borrowed') {
+                    result1 = accessibilities.filter(i => i.value === 'No');
+                }
+
+                // Author filter
+                const selectedCheck = [...selected];    // State handled from the separate script element above
+                let result2 = authors2;
+
+                if (selectedCheck.length > 0) {
+                    result2 = [];
+
+                    for (let i = 0; i < authors2.length; i++) {
+                        for (let j = 0; j < selectedCheck.length; j++) {
+                            if (authors2[i].value === selectedCheck[j]) {
+                                result2.push(authors2[i]);
+                            }
+                        }
+                    }
+                }
+
+                // Show only those entires that exists in all three of the results
+                const final = new Set();
+                for (let i = 0; i < result.length; i++) {
+                    for (let j = 0; j < result1.length; j++) {
+                        for (let k = 0; k < result2.length; k++) {
+                            if (result[i].id == result1[j].id && (result[i].id == result1[j].id || result[i].id == result2[k].id)) final.add(result[i].id);
+                            // console.log(result[i].id, result1[j].id, result2[k].id);
+                        }
+                    }
+                }
+
+                // Make everything "display: none;" except those that are in the final Set.
+                const tempset = [...final];
+                for (let i = 0; i < children.length; i++) {
+                    children[i].style.display = 'none';
+                    for (let j = 0; j < tempset.length; j++) {
+                        if (i == tempset[j]) {
+                            children[i].style.display = 'block';
+                            break;
+                        }
+                    }
+                }
+
+                // Return false to prevent default form behaviour.
+                return false;
+            }
+
+            const form = document.getElementById('searchform');
+            if (form.attachEvent) {
+                form.attachEvent("submit", processForm);
+            } else {
+                form.addEventListener("submit", processForm);
+            }
     </script>
 </body>
 </html>

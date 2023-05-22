@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.2.min.js" integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
+    <title>Users</title>
+    <style>
+        tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        table {
+            border-collapse: collapse;
+        }
+    </style>
+</head>
+<body>
+    <h1>Users:</h1>
+    <a href="/">Home</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Firstname</th>
+                <th>Lastname</th>
+            </tr>
+        </thead>
+        <tbody id="table">
+            <!-- Dynamically appended -->
+        </tbody>
+    </table>
+    <script>
+        $.ajax({
+            url: '/ajax/users',
+            type: "GET",
+            success: (users, status, http) => {
+                console.log(users);
+
+                // Prepare the table to be appened with
+                const table = document.getElementById('table');
+                
+                // Append the table
+                for (let i = 0; i < users.length; i++) {
+                    const user = users[i];
+
+                    const elem = document.createElement('tr');
+                    elem.innerHTML = `<td><a href="/user/${user.username}/">${user.username}</a></td><td>${user.firstname}</td><td>${user.lastname}</td>`;
+                    table.appendChild(elem);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
